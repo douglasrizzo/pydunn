@@ -96,7 +96,10 @@ def dunn(
 
   The index is defined as:
 
-  .. math:: D = \min_{i = 1 \ldots n_c; j = i + 1\ldots n_c} \left\lbrace \frac{d \left( c_i,c_j \right)}{\max_{k = 1 \ldots n_c} \left(diam \left(c_k \right) \right)} \right\rbrace
+  .. math::
+
+     D = \min_{i = 1 \ldots n_c; j = i + 1\ldots n_c} \left\lbrace \frac{d \left( c_i,c_j \right)}
+      {\max_{k = 1 \ldots n_c} \left(diam \left(c_k \right) \right)} \right\rbrace
 
   where :math:`d(c_i,c_j)` represents the distance between clusters :math:`c_i` and :math:`c_j`, and :math:`diam(c_k)`
   is the diameter of cluster :math:`c_k`.
@@ -136,33 +139,12 @@ def dunn(
   return min_distance / max_diameter
 
 
-def __validate_distance_matrix(distances: np.ndarray):
+def __validate_distance_matrix(distances: np.ndarray) -> None:
   """Ensure distance matrix is 2-dimensional, square and symmetric.
 
   Parameters:
     distances (np.ndarray): The matrix of distances to be validated.
   """
-  assert distances.ndim == 2, "Distances matrix must be 2-dimensional."
+  assert distances.ndim == 2, "Distances matrix must be 2-dimensional."  # noqa: PLR2004
   assert distances.shape[0] == distances.shape[1], "Distances matrix must be square."
   assert np.allclose(distances, distances.T, rtol=1e-05, atol=1e-08), "Distances matrix must be symmetric."
-
-
-if __name__ == "__main__":
-  from sklearn.metrics.pairwise import euclidean_distances
-
-  data = np.array([[0, 0], [0, 1], [1, 0], [1, 1], [10, 10], [10, 14], [14, 10], [14, 14]])
-  labels = [0, 0, 0, 0, 1, 1, 1, 1]
-  distances = euclidean_distances(data)
-  __validate_distance_matrix(distances)
-
-  print("#### Distances ####")
-  for cdist_method in ClusterDistanceMethod:
-    print(cdist_method, "\n", inter_cluster_distances(labels, distances, cdist_method))
-  print("\n#### Diameters ####")
-  for diameter_method in DiameterMethod:
-    print(diameter_method, compute_cluster_diameters(labels, distances, diameter_method))
-
-  print("\n\n#### Dunn ####")
-  for diameter_method in DiameterMethod:
-    for cdist_method in ClusterDistanceMethod:
-      print(diameter_method, cdist_method, dunn(labels, distances, diameter_method, cdist_method))

@@ -33,7 +33,7 @@ def inter_cluster_distances(
     np.ndarray: The inter-cluster distances matrix, a symmetric matrix.
   """
   __validate_distance_matrix(distances)
-
+  labels = np.array(labels, dtype=int)
   c_labels = np.unique(labels)
   n_clusters = len(c_labels)
 

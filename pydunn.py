@@ -5,11 +5,15 @@ from sklearn.preprocessing import LabelEncoder
 
 
 class DiameterMethod(Enum):
+  """Cluster diameter computation methods."""
+
   MEAN_CLUSTER = 1
   FARTHEST = 2
 
 
 class ClusterDistanceMethod(Enum):
+  """Inter cluster distance computation methods."""
+
   NEAREST = 1
   FARTHEST = 2
 
@@ -36,13 +40,10 @@ def inter_cluster_distances(
 
   for i, c1 in enumerate(c_labels):
     for c2 in c_labels[i + 1 :]:
-      distances_this_cluster = distances[labels == c1].copy()
       if method == ClusterDistanceMethod.NEAREST:
-        distances_this_cluster[:, labels != c2] = float("inf")
-        cluster_distances[c1, c2] = cluster_distances[c2, c1] = distances_this_cluster.min()
+        cluster_distances[c1, c2] = cluster_distances[c2, c1] = distances[labels == c1][:, labels == c2].min()
       else:
-        distances_this_cluster[:, labels != c2] = -float("inf")
-        cluster_distances[c1, c2] = cluster_distances[c2, c1] = distances_this_cluster.max()
+        cluster_distances[c1, c2] = cluster_distances[c2, c1] = distances[labels == c1][:, labels == c2].max()
   return cluster_distances
 
 
@@ -64,7 +65,7 @@ def compute_cluster_diameters(
     diameters = {c: distances[labels == c][:, labels == c].sum() for c in np.unique(labels)}
     for c in np.unique(labels):
       c_cize = sum(labels == c)
-      diameters[c] /= c_cize * (c_cize - 1) / 2
+      diameters[c] /= c_cize * (c_cize - 1)
 
   elif method == DiameterMethod.FARTHEST:
     diameters = {c: distances[labels == c][:, labels == c].max() for c in np.unique(labels)}
@@ -107,44 +108,30 @@ def dunn(
     float: The ratio of the minimum inter-cluster distance to the maximum cluster diameter.
 
   References:
-    Kovács, F., Legány, C., & Babos, A. (2005). Cluster validity measurement techniques. 6th International Symposium of
-    Hungarian Researchers on Computational Intelligence.
+    Dunn JC. Well-Separated Clusters and Optimal Fuzzy Partitions. Journal of Cybernetics. 1974 Jan;4(1):95-104.
   """
   labels = LabelEncoder().fit_transform(labels)
   ic_distances = inter_cluster_distances(labels, distances, cdist_method)
   min_distance = min(ic_distances[ic_distances.nonzero()])
-  max_diameter = max(compute_cluster_diameters(labels, distances, diameter_method))
+  max_diameter = max(compute_cluster_diameters(labels, distances, diameter_method).values())
   return min_distance / max_diameter
 
 
 if __name__ == "__main__":
-  # from sklearn.cluster import KMeans
-  # from sklearn.datasets import load_iris
   from sklearn.metrics.pairwise import euclidean_distances
 
   data = np.array([[0, 0], [0, 1], [1, 0], [1, 1], [10, 10], [10, 14], [14, 10], [14, 14]])
   labels = [0, 0, 0, 0, 1, 1, 1, 1]
   distances = euclidean_distances(data)
 
+  print("#### Distances ####")
   for cdist_method in ClusterDistanceMethod:
     print(cdist_method, "\n", inter_cluster_distances(labels, distances, cdist_method))
+  print("\n\n#### Diameters ####")
   for diameter_method in DiameterMethod:
     print(diameter_method, compute_cluster_diameters(labels, distances, diameter_method))
 
+  print("\n\n#### Dunn ####")
   for diameter_method in DiameterMethod:
     for cdist_method in ClusterDistanceMethod:
-      dund = dunn(labels, distances, diameter_method, cdist_method)
-      print(diameter_method, cdist_method, dund)
-
-  # data = load_iris()
-  # kmeans = KMeans(n_clusters=3)
-  # iris_labels = data["target"]
-  # iris_features = data["data"]
-  # cluster_labels = kmeans.fit_predict(iris_features)
-  # distances = euclidean_distances(iris_features)
-
-  # for diameter_method in DiameterMethod:
-  #   for cdist_method in ClusterDistanceMethod:
-  #     dund = dunn(iris_labels, distances, diameter_method, cdist_method)
-  #     dunk = dunn(cluster_labels, distances, diameter_method, cdist_method)
-  #     print(diameter_method, cdist_method, dund, dunk)
+      print(diameter_method, cdist_method, dunn(labels, distances, diameter_method, cdist_method))

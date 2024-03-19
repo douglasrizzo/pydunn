@@ -3,8 +3,9 @@
 An implementation of the Dunn index in Python. It sat for ages as a GitHub Gist page, but now I've transferred it to a proper repo so people can report issues more easily.
 
 ```py
-from pydunn import dunn
+import numpy as np
 from sklearn.metrics.pairwise import euclidean_distances
+from pydunn import dunn
 
 # data points and labels
 data = np.array([[0, 0], [0, 1], [1, 0], [1, 1], [10, 10], [10, 14], [14, 10], [14, 14]])

@@ -3,6 +3,9 @@
 An implementation of the Dunn index in Python. It sat for ages as a GitHub Gist page, but now I've transferred it to a proper repo so people can report issues more easily.
 
 ```py
+from pydunn import dunn
+from sklearn.metrics.pairwise import euclidean_distances
+
 # data points and labels
 data = np.array([[0, 0], [0, 1], [1, 0], [1, 1], [10, 10], [10, 14], [14, 10], [14, 14]])
 labels = [0, 0, 0, 0, 1, 1, 1, 1]
@@ -19,6 +22,8 @@ for cdist_method in ClusterDistanceMethod:
 As a bonus, you can also compute inter-cluster distances and cluster diameters separately.
 
 ```py
+from pydunn import inter_cluster_distances, compute_cluster_diameters
+
 # compute inter-cluster distances
 print("#### Distances ####")
 for cdist_method in ClusterDistanceMethod:
@@ -28,6 +33,4 @@ for cdist_method in ClusterDistanceMethod:
 print("\n\n#### Diameters ####")
 for diameter_method in DiameterMethod:
     print(diameter_method, compute_cluster_diameters(labels, distances, diameter_method))
-
-
 ```

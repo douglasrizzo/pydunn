@@ -1,6 +1,8 @@
 # Dunn index in Python
 
-An implementation of the Dunn index in Python. It sat for ages as a GitHub Gist page, but now I've transferred it to a proper repo so people can report issues more easily.
+An implementation of the Dunn index for internal cluster validity in Python. It sat for ages on a GitHub Gist but now it's been transferred to a proper repo.
+
+## Usage
 
 ```py
 import numpy as np

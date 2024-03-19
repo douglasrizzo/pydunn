@@ -32,6 +32,8 @@ def inter_cluster_distances(
   Returns:
     np.ndarray: The inter-cluster distances matrix, a symmetric matrix.
   """
+  __validate_distance_matrix(distances)
+
   c_labels = np.unique(labels)
   n_clusters = len(c_labels)
 
@@ -65,6 +67,7 @@ def compute_cluster_diameters(
   Returns:
     dict[int, float]: A dictionary containing the computed diameters for each cluster
   """
+  __validate_distance_matrix(distances)
   # convert cluster labels to numpy array to use it as a boolean mask, which does not work with lists
   labels = np.array(labels, dtype=int)
   if method == DiameterMethod.MEAN_CLUSTER:
@@ -120,6 +123,7 @@ def dunn(
   References:
     Dunn JC. Well-Separated Clusters and Optimal Fuzzy Partitions. Journal of Cybernetics. 1974 Jan;4(1):95-104.
   """
+  __validate_distance_matrix(distances)
   # encode labels as integers starting from 0
   labels = LabelEncoder().fit_transform(labels)
 
@@ -132,17 +136,29 @@ def dunn(
   return min_distance / max_diameter
 
 
+def __validate_distance_matrix(distances: np.ndarray):
+  """Ensure distance matrix is 2-dimensional, square and symmetric.
+
+  Parameters:
+    distances (np.ndarray): The matrix of distances to be validated.
+  """
+  assert distances.ndim == 2, "Distances matrix must be 2-dimensional."
+  assert distances.shape[0] == distances.shape[1], "Distances matrix must be square."
+  assert np.allclose(distances, distances.T, rtol=1e-05, atol=1e-08), "Distances matrix must be symmetric."
+
+
 if __name__ == "__main__":
   from sklearn.metrics.pairwise import euclidean_distances
 
   data = np.array([[0, 0], [0, 1], [1, 0], [1, 1], [10, 10], [10, 14], [14, 10], [14, 14]])
   labels = [0, 0, 0, 0, 1, 1, 1, 1]
   distances = euclidean_distances(data)
+  __validate_distance_matrix(distances)
 
   print("#### Distances ####")
   for cdist_method in ClusterDistanceMethod:
     print(cdist_method, "\n", inter_cluster_distances(labels, distances, cdist_method))
-  print("\n\n#### Diameters ####")
+  print("\n#### Diameters ####")
   for diameter_method in DiameterMethod:
     print(diameter_method, compute_cluster_diameters(labels, distances, diameter_method))
 

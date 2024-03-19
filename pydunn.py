@@ -30,16 +30,21 @@ def inter_cluster_distances(
     ClusterDistanceMethod.NEAREST.
 
   Returns:
-    np.ndarray: The inter-cluster distances matrix.
+    np.ndarray: The inter-cluster distances matrix, a symmetric matrix.
   """
   c_labels = np.unique(labels)
   n_clusters = len(c_labels)
-  cluster_distances = np.full((n_clusters, n_clusters), float("inf") if method == ClusterDistanceMethod.NEAREST else 0)
 
+  # create matrix of cluster distances, it is convenient to fill it with infinity values when working with nearest
+  # cluster distance method
+  cluster_distances = np.full((n_clusters, n_clusters), float("inf") if method == ClusterDistanceMethod.NEAREST else 0)
   np.fill_diagonal(cluster_distances, 0)
 
+  # distances[labels == c1] returns the distance of all data points between cluster c1 and all other data points
+  # distances[labels == c1][:, labels == c2] returns the distances between data points in clusters c1 and c2
   for i, c1 in enumerate(c_labels):
     for c2 in c_labels[i + 1 :]:
+      # for nearest cluster distance method, get the min(), for farthest cluster distance method get the max()
       if method == ClusterDistanceMethod.NEAREST:
         cluster_distances[c1, c2] = cluster_distances[c2, c1] = distances[labels == c1][:, labels == c2].min()
       else:
@@ -60,13 +65,18 @@ def compute_cluster_diameters(
   Returns:
     dict[int, float]: A dictionary containing the computed diameters for each cluster
   """
+  # convert cluster labels to numpy array to use it as a boolean mask, which does not work with lists
   labels = np.array(labels, dtype=int)
   if method == DiameterMethod.MEAN_CLUSTER:
+    # for mean cluster diameter method, sum the distances between all data points in the same cluster
+    # and divide it by the number of possible pairs data points in the cluster
     diameters = {c: distances[labels == c][:, labels == c].sum() for c in np.unique(labels)}
     for c in np.unique(labels):
       c_cize = sum(labels == c)
+      # because we are summing the full symmetric matrix, we need to divide by n*(n-1) and not (n*(n-1))/2
       diameters[c] /= c_cize * (c_cize - 1)
 
+  # for farthest cluster diameter method, get the maximum distance between all data points in the same cluster
   elif method == DiameterMethod.FARTHEST:
     diameters = {c: distances[labels == c][:, labels == c].max() for c in np.unique(labels)}
 
@@ -110,10 +120,15 @@ def dunn(
   References:
     Dunn JC. Well-Separated Clusters and Optimal Fuzzy Partitions. Journal of Cybernetics. 1974 Jan;4(1):95-104.
   """
+  # encode labels as integers starting from 0
   labels = LabelEncoder().fit_transform(labels)
+
+  # get the minimum inter-cluster distance and the maximum cluster diameter
   ic_distances = inter_cluster_distances(labels, distances, cdist_method)
   min_distance = min(ic_distances[ic_distances.nonzero()])
   max_diameter = max(compute_cluster_diameters(labels, distances, diameter_method).values())
+
+  # compute and return the Dunn index
   return min_distance / max_diameter
 
 

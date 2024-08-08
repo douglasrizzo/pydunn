@@ -17,9 +17,9 @@ distances = euclidean_distances(data)
 # compute the Dunn index
 print("\n\n#### Dunn ####")
 for diameter_method in DiameterMethod:
-for cdist_method in ClusterDistanceMethod:
-    dunn_index = dunn(labels, distances, diameter_method, cdist_method)
-    print(diameter_method, cdist_method, dunn_index)
+    for cdist_method in ClusterDistanceMethod:
+        dunn_index = dunn(labels, distances, diameter_method, cdist_method)
+        print(diameter_method, cdist_method, dunn_index)
 ```
 
 As a bonus, you can also compute inter-cluster distances and cluster diameters separately.

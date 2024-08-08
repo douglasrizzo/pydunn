@@ -177,9 +177,15 @@ def __validate_distance_matrix(distances: np.ndarray) -> None:
 
   Raises
   ------
-  AssertionError
+  ValueError
       If the distance matrix is not 2-dimensional, not square, or not symmetric.
   """
-  assert distances.ndim == 2, "Distance matrix must be 2-dimensional."  # noqa: PLR2004
-  assert distances.shape[0] == distances.shape[1], "Distance matrix must be square."
-  assert np.allclose(distances, distances.T, rtol=1e-05, atol=1e-08), "Distance matrix must be symmetric."
+  if distances.ndim != 2:  # noqa: PLR2004
+    msg = "Distance matrix must be 2-dimensional."
+    raise ValueError(msg)
+  if distances.shape[0] != distances.shape[1]:
+    msg = "Distance matrix must be square."
+    raise ValueError(msg)
+  if not np.allclose(distances, distances.T, rtol=1e-05, atol=1e-08):
+    msg = "Distance matrix must be symmetric."
+    raise ValueError(msg)

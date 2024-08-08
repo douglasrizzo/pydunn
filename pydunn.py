@@ -1,7 +1,6 @@
 from enum import Enum
 
 import numpy as np
-from sklearn.preprocessing import LabelEncoder
 
 
 class DiameterMethod(Enum):
@@ -19,18 +18,26 @@ class ClusterDistanceMethod(Enum):
 
 
 def inter_cluster_distances(
-  labels: list[int], distances: np.ndarray, method: ClusterDistanceMethod = ClusterDistanceMethod.NEAREST
+  labels: list[int],
+  distances: np.ndarray,
+  method: ClusterDistanceMethod = ClusterDistanceMethod.NEAREST,
 ) -> np.ndarray:
   """Compute inter-cluster distances based on the given labels and distances using the specified method.
 
-  Args:
-    labels (list[int]): The cluster labels for each data point.
-    distances (np.ndarray): The pairwise distances between data points.
-    method (ClusterDistanceMethod, optional): The method to use for calculating inter-cluster distances. Defaults to
-    ClusterDistanceMethod.NEAREST.
+  Parameters
+  ----------
+  labels : list[int]
+      The cluster labels for each data point.
+  distances : np.ndarray
+      The pairwise distances between data points.
+  method : ClusterDistanceMethod, optional
+      The method to use for calculating inter-cluster distances. Defaults to
+      ClusterDistanceMethod.NEAREST.
 
-  Returns:
-    np.ndarray: The inter-cluster distances matrix, a symmetric matrix.
+  Returns
+  -------
+  np.ndarray
+      The inter-cluster distances matrix, a symmetric matrix.
   """
   __validate_distance_matrix(distances)
   labels = np.array(labels, dtype=int)
@@ -39,33 +46,46 @@ def inter_cluster_distances(
 
   # create matrix of cluster distances, it is convenient to fill it with infinity values when working with nearest
   # cluster distance method
-  cluster_distances = np.full((n_clusters, n_clusters), float("inf") if method == ClusterDistanceMethod.NEAREST else 0)
+  cluster_distances = np.full(
+    (n_clusters, n_clusters),
+    float("inf") if method == ClusterDistanceMethod.NEAREST else 0,
+  )
   np.fill_diagonal(cluster_distances, 0)
 
+  cluster_pairs = ((c1, c2) for i, c1 in enumerate(c_labels) for c2 in c_labels[i + 1 :])
   # distances[labels == c1] returns the distance between all data points in cluster c1 and all other data points
   # distances[labels == c1][:, labels == c2] returns the distances between data points in clusters c1 and c2
-  for i, c1 in enumerate(c_labels):
-    for c2 in c_labels[i + 1 :]:
-      # for nearest cluster distance method, get the min(), for farthest cluster distance method get the max()
-      if method == ClusterDistanceMethod.NEAREST:
-        cluster_distances[c1, c2] = cluster_distances[c2, c1] = distances[labels == c1][:, labels == c2].min()
-      else:
-        cluster_distances[c1, c2] = cluster_distances[c2, c1] = distances[labels == c1][:, labels == c2].max()
+  for c1, c2 in cluster_pairs:
+    # for nearest cluster distance method, get the min(), for farthest cluster distance method get the max()
+    c_dist = (
+      distances[labels == c1][:, labels == c2].min()
+      if method == ClusterDistanceMethod.NEAREST
+      else distances[labels == c1][:, labels == c2].max()
+    )
+    cluster_distances[c1, c2] = cluster_distances[c2, c1] = c_dist
   return cluster_distances
 
 
 def compute_cluster_diameters(
-  labels: list[int], distances: np.ndarray, method: DiameterMethod = DiameterMethod.FARTHEST
+  labels: list[int],
+  distances: np.ndarray,
+  method: DiameterMethod = DiameterMethod.FARTHEST,
 ) -> dict[int, float]:
   """Compute cluster diameters based on the given labels, distances, and diameter computation method.
 
-  Parameters:
-    labels (list[int]): List of cluster labels
-    distances (np.ndarray): 2D array of distances between data points
-    method (DiameterMethod, optional): Method for computing cluster diameters, defaults to DiameterMethod.FARTHEST
+  Parameters
+  ----------
+  labels : list[int]
+      List of cluster labels
+  distances : np.ndarray
+      Array of distances between data points
+  method : DiameterMethod, optional
+      Method for computing cluster diameters, default is DiameterMethod.FARTHEST
 
-  Returns:
-    dict[int, float]: A dictionary containing the computed diameters for each cluster
+  Returns
+  -------
+  dict[int, float]
+      Dictionary containing the computed diameters for each cluster.
   """
   __validate_distance_matrix(distances)
   # convert cluster labels to numpy array to use it as a boolean mask, which does not work with lists
@@ -112,23 +132,31 @@ def dunn(
   The higher the value of the resulting Dunn index, the better the clustering result is considered, since higher values
   indicate that clusters are compact (small :math:`diam(c_k)`) and far apart (large :math:`d \left( c_i,c_j \right)`).
 
-  Parameters:
-    labels (list[int]): The list of labels for each data point.
-    distances (np.ndarray): The array of distances between data points.
-    diameter_method (DiameterMethod, optional): The method to calculate the cluster diameter. Defaults to
-    DiameterMethod.FARTHEST.
-    cdist_method (ClusterDistanceMethod, optional): The method to calculate the inter-cluster distances. Defaults to
-    ClusterDistanceMethod.NEAREST.
+  Parameters
+  ----------
+  labels : list[int]
+      The list of labels for each data point.
+  distances : np.ndarray
+      The array of distances between data points.
+  diameter_method : DiameterMethod, optional
+      The method to calculate the cluster diameter. Defaults to DiameterMethod.FARTHEST.
+  cdist_method : ClusterDistanceMethod, optional
+      The method to calculate the inter-cluster distances. Defaults to ClusterDistanceMethod.NEAREST.
 
-  Returns:
-    float: The ratio of the minimum inter-cluster distance to the maximum cluster diameter.
+  Returns
+  -------
+  float
+      The ratio of the minimum inter-cluster distance to the maximum cluster diameter.
 
-  References:
-    Dunn JC. Well-Separated Clusters and Optimal Fuzzy Partitions. Journal of Cybernetics. 1974 Jan;4(1):95-104.
+  References
+  ----------
+  Dunn JC. Well-Separated Clusters and Optimal Fuzzy Partitions.
+  Journal of Cybernetics. 1974 Jan;4(1):95-104.
   """
   __validate_distance_matrix(distances)
   # encode labels as integers starting from 0
-  labels = LabelEncoder().fit_transform(labels)
+  label_map = {old_label: new_label for new_label, old_label in enumerate(set(labels))}
+  labels = [label_map[old_label] for old_label in labels]
 
   # get the minimum inter-cluster distance and the maximum cluster diameter
   ic_distances = inter_cluster_distances(labels, distances, cdist_method)
@@ -140,11 +168,24 @@ def dunn(
 
 
 def __validate_distance_matrix(distances: np.ndarray) -> None:
-  """Ensure distance matrix is 2-dimensional, square and symmetric.
+  """Validate a distance matrix.
 
-  Parameters:
-    distances (np.ndarray): The matrix of distances to be validated.
+  Parameters
+  ----------
+  distances : ndarray
+      The matrix of distances to be validated.
+
+  Raises
+  ------
+  ValueError
+      If the distance matrix is not 2-dimensional, not square, or not symmetric.
   """
-  assert distances.ndim == 2, "Distances matrix must be 2-dimensional."  # noqa: PLR2004
-  assert distances.shape[0] == distances.shape[1], "Distances matrix must be square."
-  assert np.allclose(distances, distances.T, rtol=1e-05, atol=1e-08), "Distances matrix must be symmetric."
+  if distances.ndim != 2:  # noqa: PLR2004
+    msg = "Distance matrix must be 2-dimensional."
+    raise ValueError(msg)
+  if distances.shape[0] != distances.shape[1]:
+    msg = "Distance matrix must be square."
+    raise ValueError(msg)
+  if not np.allclose(distances, distances.T, rtol=1e-05, atol=1e-08):
+    msg = "Distance matrix must be symmetric."
+    raise ValueError(msg)

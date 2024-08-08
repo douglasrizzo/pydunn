@@ -42,7 +42,7 @@ def inter_cluster_distances(
   cluster_distances = np.full((n_clusters, n_clusters), float("inf") if method == ClusterDistanceMethod.NEAREST else 0)
   np.fill_diagonal(cluster_distances, 0)
 
-  # distances[labels == c1] returns the distance of all data points between cluster c1 and all other data points
+  # distances[labels == c1] returns the distance between all data points in cluster c1 and all other data points
   # distances[labels == c1][:, labels == c2] returns the distances between data points in clusters c1 and c2
   for i, c1 in enumerate(c_labels):
     for c2 in c_labels[i + 1 :]:

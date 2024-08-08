@@ -1,1 +1,3 @@
-scikit_sklearn
+scikit_learn
+scipy
+validclust
